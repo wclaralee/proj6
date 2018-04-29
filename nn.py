@@ -81,6 +81,7 @@ class Graph(object):
         so don't forget to call `self.add` on each of the variables.
         """
         "*** YOUR CODE HERE ***"
+        self.variables = variables
 
     def get_nodes(self):
         """
@@ -286,10 +287,12 @@ class Add(FunctionNode):
     @staticmethod
     def forward(inputs):
         "*** YOUR CODE HERE ***"
+        return np.add(inputs[0], inputs[1])
 
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
+        return [gradient, gradient]
 
 
 class MatrixMultiply(FunctionNode):
@@ -307,10 +310,14 @@ class MatrixMultiply(FunctionNode):
     @staticmethod
     def forward(inputs):
         "*** YOUR CODE HERE ***"
+        return np.dot(inputs[0], inputs[1])
 
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
+        dfda = np.dot(gradient, inputs[1].T)
+        dfdb = np.dot(inputs[0].T, gradient)
+        return [dfda, dfdb]
 
 
 class MatrixVectorAdd(FunctionNode):
@@ -328,10 +335,23 @@ class MatrixVectorAdd(FunctionNode):
     @staticmethod
     def forward(inputs):
         "*** YOUR CODE HERE ***"
+        # return np.sum(inputs, axis=0)
+        A, x = inputs
+        return A + x
 
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
+        # print "input shape", inputs[0].shape
+        # print "gradient shape", gradient.shape
+        # print "inputs", inputs
+        # print "gradient", gradient
+        # print "input 0 shape", inputs[0].shape
+        # print "input 1 shape", inputs[1].shape
+        # print "gradient shape", gradient.shape
+        # print "gradient", gradient
+
+        return [gradient, np.sum(gradient, axis=0)]
 
 
 class ReLU(FunctionNode):
@@ -349,10 +369,21 @@ class ReLU(FunctionNode):
     @staticmethod
     def forward(inputs):
         "*** YOUR CODE HERE ***"
+        x = inputs[0]
+        return np.where(x >= 0, x, 0)
 
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
+        x = inputs[0]
+        dcda = np.where(x<=0, 0, 1)
+        print "x shape", x.shape
+        print "gradient shape", gradient.shape
+        ret = np.array([np.dot(gradient, dcda.T)])
+        print "ret shape", ret.shape
+        # ret = np.pad(ret, (0, x.shape[0]-1), 'constant') #lol bro no idea
+
+        return [ret]
 
 
 class SquareLoss(FunctionNode):
