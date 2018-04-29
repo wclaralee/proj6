@@ -82,6 +82,9 @@ class Graph(object):
         """
         "*** YOUR CODE HERE ***"
         self.variables = variables
+        self.nodes = []
+        for variable in variables:
+            self.add(variable)
 
     def get_nodes(self):
         """
@@ -94,6 +97,7 @@ class Graph(object):
         Returns: a list of nodes
         """
         "*** YOUR CODE HERE ***"
+        return self.nodes
 
     def get_inputs(self, node):
         """
@@ -376,14 +380,8 @@ class ReLU(FunctionNode):
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
         x = inputs[0]
-        dcda = np.where(x<=0, 0, 1)
-        print "x shape", x.shape
-        print "gradient shape", gradient.shape
-        ret = np.array([np.dot(gradient, dcda.T)])
-        print "ret shape", ret.shape
-        # ret = np.pad(ret, (0, x.shape[0]-1), 'constant') #lol bro no idea
-
-        return [ret]
+        dcda = np.where(x>=0, gradient, 0)
+        return [dcda]
 
 
 class SquareLoss(FunctionNode):
