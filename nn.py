@@ -346,15 +346,6 @@ class MatrixVectorAdd(FunctionNode):
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
-        # print "input shape", inputs[0].shape
-        # print "gradient shape", gradient.shape
-        # print "inputs", inputs
-        # print "gradient", gradient
-        # print "input 0 shape", inputs[0].shape
-        # print "input 1 shape", inputs[1].shape
-        # print "gradient shape", gradient.shape
-        # print "gradient", gradient
-
         return [gradient, np.sum(gradient, axis=0)]
 
 
@@ -401,10 +392,19 @@ class SquareLoss(FunctionNode):
     @staticmethod
     def forward(inputs):
         "*** YOUR CODE HERE ***"
+        a = inputs[0]
+        b = inputs[1]
+        ret = 0.5 * (np.add(a, (b*-1))**2)
+        return np.mean(ret)
 
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
+        a = inputs[0]
+        b = inputs[1]
+        dcda = a-b
+        dcdb = (a-b)*(-1)
+        return[np.divide(gradient*dcda, a.size), np.divide(gradient*dcdb, b.size)]
 
 
 class SoftmaxLoss(FunctionNode):
