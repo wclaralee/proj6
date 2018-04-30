@@ -83,6 +83,8 @@ class Graph(object):
         "*** YOUR CODE HERE ***"
         self.variables = variables
         self.nodes = []
+        self.nodes_output = {}
+        self.nodes_gradient = {}
         for variable in variables:
             self.add(variable)
 
@@ -111,6 +113,7 @@ class Graph(object):
         Hint: every node has a `.get_parents()` method
         """
         "*** YOUR CODE HERE ***"
+        return [self.get_output(p) for p in node.get_parents()]
 
     def get_output(self, node):
         """
@@ -122,6 +125,7 @@ class Graph(object):
         Returns: a numpy array or a scalar
         """
         "*** YOUR CODE HERE ***"
+        return self.nodes_output[node]
 
     def get_gradient(self, node):
         """
@@ -139,6 +143,7 @@ class Graph(object):
         Returns: a numpy array
         """
         "*** YOUR CODE HERE ***"
+        return self.nodes_gradient[node]
 
     def add(self, node):
         """
@@ -155,6 +160,11 @@ class Graph(object):
         accumulator for the node, with correct shape.
         """
         "*** YOUR CODE HERE ***"
+        self.nodes.append(node)
+        node_inputs = self.get_inputs(node)
+        output = node.forward(node_inputs)
+        self.nodes_output[node] = output
+        self.nodes_gradient[node] = np.zeros_like(output)
 
     def backprop(self):
         """
@@ -174,6 +184,14 @@ class Graph(object):
         assert np.asarray(self.get_output(loss_node)).ndim == 0
 
         "*** YOUR CODE HERE ***"
+        self.nodes_gradient[loss_node] = 1.0
+        backwards_nodes = self.nodes[::-1]
+        for node in backwards_nodes:
+            gradients = node.backward(self.get_inputs(node), self.get_gradient(node))
+            i = 0
+            for parent in node.get_parents():
+                self.nodes_gradient[parent] = gradients[i]
+                i+=1
 
     def step(self, step_size):
         """
@@ -186,6 +204,11 @@ class Graph(object):
         Hint: each Variable has a `.data` attribute
         """
         "*** YOUR CODE HERE ***"
+        all_nodes = self.get_nodes()
+        for node in all_nodes:
+            if isinstance(node, Variable):
+                node.data -= step_size * self.get_gradient(node)
+
 
 
 class DataNode(object):
