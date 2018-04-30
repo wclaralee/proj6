@@ -46,6 +46,16 @@ class RegressionModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
+        #hidden layer sizes: between 10 and 400
+        #learning rate: .001 to 1
+        #numbre hidden layers: 1-3
+        self.learning_rate = .01
+
+        self.W1, self.b1 = nn.Variable(1, 300), nn.Variable(300)
+        self.W2, self.b2 = nn.Variable(300, 300), nn.Variable(300)
+        self.W3, self.b3 = nn.Variable(300, 1), nn.Variable(1)
+       
+
 
     def run(self, x, y=None):
         """
@@ -69,6 +79,21 @@ class RegressionModel(Model):
         Note: DO NOT call backprop() or step() inside this method!
         """
         "*** YOUR CODE HERE ***"
+        #three layer f(x) = relu(relu(x*W1 + b1)* W2 + b2) * W3 + b3
+        variables = [self.W1, self.b1, self.W2, self.b2, self.W3, self.b3]
+        self.graph = nn.Graph(variables)
+        func_x = nn.Input(self.graph, x)
+        #inner_relu = relu(x*W1 + b1)
+        inner_relu = nn.ReLU(self.graph, nn.MatrixVectorAdd(self.graph, nn.MatrixMultiply(self.graph, func_x, self.W1), self.b1))
+        #second_relu = relu(inner_relu * W2 + b2)
+        innerW2 = nn.MatrixMultiply(self.graph, inner_relu, self.W2)
+        innerW2b2 = nn.MatrixVectorAdd(self.graph, innerW2, self.b2)
+        second_relu = nn.ReLU(self.graph, innerW2b2)
+
+        #last = second_relu * W3 + b3
+        multW3 = nn.MatrixMultiply(self.graph, second_relu, self.W3)
+        finallyaddb3 = nn.MatrixVectorAdd(self.graph, multW3, self.b3)
+
 
         if y is not None:
             # At training time, the correct output `y` is known.
@@ -76,11 +101,14 @@ class RegressionModel(Model):
             # that the node belongs to. The loss node must be the last node
             # added to the graph.
             "*** YOUR CODE HERE ***"
+            given_y = nn.Input(self.graph, y)
+            loss = nn.SquareLoss(self.graph, finallyaddb3, given_y)
+            return self.graph
         else:
             # At test time, the correct output is unknown.
             # You should instead return your model's prediction as a numpy array
             "*** YOUR CODE HERE ***"
-
+            return self.graph.get_output(self.graph.get_nodes()[-1])
 
 class OddRegressionModel(Model):
     """
@@ -100,8 +128,11 @@ class OddRegressionModel(Model):
 
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
+        self.learning_rate = .02
         "*** YOUR CODE HERE ***"
-
+        self.W1, self.b1 = nn.Variable(1, 300), nn.Variable(300)
+        self.W2, self.b2 = nn.Variable(300, 300), nn.Variable(300)
+        # self.W3, self.b3 = nn.Variable(300, 1), nn.Variable(1)
     def run(self, x, y=None):
         """
         TODO: Question 5 - [Application] OddRegression
@@ -124,6 +155,7 @@ class OddRegressionModel(Model):
         Note: DO NOT call backprop() or step() inside this method!
         """
         "*** YOUR CODE HERE ***"
+        self.graph = nn.Graph()
 
         if y is not None:
             # At training time, the correct output `y` is known.

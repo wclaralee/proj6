@@ -1,5 +1,5 @@
 import numpy as np
-
+from collections import OrderedDict
 
 def main():
     """
@@ -81,10 +81,10 @@ class Graph(object):
         so don't forget to call `self.add` on each of the variables.
         """
         "*** YOUR CODE HERE ***"
-        self.variables = variables
+        # self.variables = variables
         self.nodes = []
-        self.nodes_output = {}
-        self.nodes_gradient = {}
+        self.nodes_output = OrderedDict()
+        self.nodes_gradient = OrderedDict()
         for variable in variables:
             self.add(variable)
 
@@ -188,11 +188,15 @@ class Graph(object):
         backwards_nodes = self.nodes[::-1]
         for node in backwards_nodes:
             gradients = node.backward(self.get_inputs(node), self.get_gradient(node))
-            i = 0
-            for parent in node.get_parents():
-                self.nodes_gradient[parent] = gradients[i]
-                i+=1
+            # i = 0
+            # for parent in node.get_parents():
+            #     self.nodes_gradient[parent] = gradients[i]
+            #     i+=1
+            parents = node.get_parents()
+            for i in range(len(parents)):
+                self.nodes_gradient[parents[i]] = gradients[i] + self.nodes_gradient[parents[i]]
 
+                
     def step(self, step_size):
         """
         TODO: Question 3 - [Neural Network] Computation Graph
@@ -204,8 +208,8 @@ class Graph(object):
         Hint: each Variable has a `.data` attribute
         """
         "*** YOUR CODE HERE ***"
-        all_nodes = self.get_nodes()
-        for node in all_nodes:
+        # all_nodes = self.get_nodes()
+        for node in self.nodes:
             if isinstance(node, Variable):
                 node.data -= step_size * self.get_gradient(node)
 
@@ -319,7 +323,7 @@ class Add(FunctionNode):
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
-        return [gradient, gradient]
+        return [np.array(gradient), np.array(gradient)]
 
 
 class MatrixMultiply(FunctionNode):
@@ -369,7 +373,7 @@ class MatrixVectorAdd(FunctionNode):
     @staticmethod
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
-        return [gradient, np.sum(gradient, axis=0)]
+        return [gradient * np.ones(inputs[0].shape), np.sum(gradient, axis=0)]
 
 
 class ReLU(FunctionNode):
@@ -394,7 +398,8 @@ class ReLU(FunctionNode):
     def backward(inputs, gradient):
         "*** YOUR CODE HERE ***"
         x = inputs[0]
-        dcda = np.where(x>=0, gradient, 0)
+        # dcda = np.where(x>=0, gradient, 0)
+        dcda = np.where(inputs[0] < 0, np.zeros_like(inputs[0]), gradient)
         return [dcda]
 
 
