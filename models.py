@@ -54,7 +54,7 @@ class RegressionModel(Model):
         self.W1, self.b1 = nn.Variable(1, 300), nn.Variable(300)
         self.W2, self.b2 = nn.Variable(300, 300), nn.Variable(300)
         self.W3, self.b3 = nn.Variable(300, 1), nn.Variable(1)
-       
+        
 
 
     def run(self, x, y=None):
@@ -128,10 +128,10 @@ class OddRegressionModel(Model):
 
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
-        self.learning_rate = .02
+        self.learning_rate = .03
         "*** YOUR CODE HERE ***"
         self.W1, self.b1 = nn.Variable(1, 300), nn.Variable(300)
-        self.W2, self.b2 = nn.Variable(300, 300), nn.Variable(300)
+        self.W2, self.b2 = nn.Variable(300, 1), nn.Variable(1)
         # self.W3, self.b3 = nn.Variable(300, 1), nn.Variable(1)
     def run(self, x, y=None):
         """
@@ -155,24 +155,57 @@ class OddRegressionModel(Model):
         Note: DO NOT call backprop() or step() inside this method!
         """
         "*** YOUR CODE HERE ***"
-        self.graph = nn.Graph()
+        #Hint: A batch of one-dimensional data can be 
+        #negated by multiplication with a 1x1 matrix containing -1.
+        #Hint: Given any function,g(x), g(x) - g(-x)  will be an odd function.
+        self.graph = nn.Graph([self.W1, self.W2, self.b1, self.b2])
+        func_x = nn.Input(self.graph, x)
+        neg_mat = nn.Input(self.graph, np.full((1,1), -1.0))
+        #f(x) = relu(x*W1 + b1)* W2 + b2
+        #inner_relu = relu(x*W1 + b1)
+        #second_relu = relu(inner_relu * W2 + b2)
+        #get both f(x) and f(-x) and then subtract?
+        #f(x)
+        in_relu = nn.MatrixVectorAdd(self.graph, nn.MatrixMultiply(self.graph, func_x, self.W1), self.b1)
+        first_relu = nn.ReLU(self.graph, in_relu)
 
+        mult_W2 = nn.MatrixMultiply(self.graph, first_relu, self.W2)
+        add_b2 = nn.MatrixVectorAdd(self.graph, mult_W2, self.b2)
+
+        #f(-x)
+        #(-x)
+        func_neg_x = nn.Input(self.graph, np.multiply(np.full_like(x, -1), x))
+
+        in_relu_neg = nn.MatrixVectorAdd(self.graph, nn.MatrixMultiply(self.graph, func_neg_x, self.W1), self.b1)
+        first_relu_neg = nn.ReLU(self.graph, in_relu_neg)
+        
+        mult_W2_neg = nn.MatrixMultiply(self.graph, first_relu_neg, self.W2)
+        add_b2_neg = nn.MatrixVectorAdd(self.graph, mult_W2_neg, self.b2)
+
+        negative_fx = nn.MatrixMultiply(self.graph, mult_W2_neg, neg_mat)
+
+        total = nn.Add(self.graph, mult_W2, negative_fx) #f(x) - f(-x) 
         if y is not None:
             # At training time, the correct output `y` is known.
             # Here, you should construct a loss node, and return the nn.Graph
             # that the node belongs to. The loss node must be the last node
             # added to the graph.
             "*** YOUR CODE HERE ***"
+
+            given_y = nn.Input(self.graph, y)
+            #print("if statement")
+            loss = nn.SquareLoss(self.graph, total, given_y)
+            return self.graph 
         else:
             # At test time, the correct output is unknown.
             # You should instead return your model's prediction as a numpy array
             "*** YOUR CODE HERE ***"
+            #print("else")
+            return self.graph.get_output(self.graph.get_nodes()[-1])
 
 
 class DigitClassificationModel(Model):
     """
-    TODO: Question 6 - [Application] Digit Classification
-
     A model for handwritten digit classification using the MNIST dataset.
 
     Each handwritten digit is a 28x28 pixel grayscale image, which is flattened
@@ -185,7 +218,6 @@ class DigitClassificationModel(Model):
     methods here. We recommend that you implement the RegressionModel before
     working on this part of the project.)
     """
-
     def __init__(self):
         Model.__init__(self)
         self.get_data_and_monitor = backend.get_data_and_monitor_digit_classification
@@ -193,11 +225,16 @@ class DigitClassificationModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
+        self.learning_rate = 0.3
+
+        self.W1 = nn.Variable(784, 300)
+        self.b1 = nn.Variable(300)
+        self.W2 = nn.Variable(300, 300)
+        self.b2 = nn.Variable(300)
+        self.W3 = nn.Variable(300, 10)
 
     def run(self, x, y=None):
         """
-        TODO: Question 6 - [Application] Digit Classification
-
         Runs the model for a batch of examples.
 
         The correct labels are known during training, but not at test time.
@@ -219,12 +256,31 @@ class DigitClassificationModel(Model):
             (if y is None) A (batch_size x 10) numpy array of scores (aka logits)
         """
         "*** YOUR CODE HERE ***"
+        self.graph = nn.Graph([self.W1, self.W2, self.W3, self.b1, self.b2])
+
+        input_x = nn.Input(self.graph, x)
+        # f(x) = relu(x * M1 + b1) * M2 + b2
+        # f(x) = relu(relu(x * M1 + b1) * M2 + b2) * M3 + b3
+
+        xw = nn.MatrixMultiply(self.graph, input_x, self.W1)
+        xw_plus_b = nn.MatrixVectorAdd(self.graph, xw, self.b1)
+        relu_xw_plus_b = nn.ReLU(self.graph, xw_plus_b)
+
+        m2 = nn.MatrixMultiply(self.graph, relu_xw_plus_b, self.W2)
+        b2_added = nn.MatrixVectorAdd(self.graph, m2, self.b2)
+        relu_layer2 = nn.ReLU(self.graph, b2_added)
+        m3 = nn.MatrixMultiply(self.graph, relu_layer2, self.W3)
+
 
         if y is not None:
             "*** YOUR CODE HERE ***"
+            input_y = nn.Input(self.graph, y)
+            loss = nn.SoftmaxLoss(self.graph, m3, input_y)
+            return self.graph
+
         else:
             "*** YOUR CODE HERE ***"
-
+            return self.graph.get_output(self.graph.get_nodes()[-1])
 
 class DeepQModel(Model):
     """
@@ -279,6 +335,7 @@ class DeepQModel(Model):
 
         if Q_target is not None:
             "*** YOUR CODE HERE ***"
+
         else:
             "*** YOUR CODE HERE ***"
 
