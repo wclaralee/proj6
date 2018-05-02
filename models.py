@@ -206,6 +206,8 @@ class OddRegressionModel(Model):
 
 class DigitClassificationModel(Model):
     """
+    TODO: Question 6 - [Application] Digit Classification
+
     A model for handwritten digit classification using the MNIST dataset.
 
     Each handwritten digit is a 28x28 pixel grayscale image, which is flattened
@@ -218,6 +220,7 @@ class DigitClassificationModel(Model):
     methods here. We recommend that you implement the RegressionModel before
     working on this part of the project.)
     """
+
     def __init__(self):
         Model.__init__(self)
         self.get_data_and_monitor = backend.get_data_and_monitor_digit_classification
@@ -225,16 +228,19 @@ class DigitClassificationModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
-        self.learning_rate = 0.3
+        self.learning_rate = 0.2
 
-        self.W1 = nn.Variable(784, 300)
-        self.b1 = nn.Variable(300)
-        self.W2 = nn.Variable(300, 300)
-        self.b2 = nn.Variable(300)
-        self.W3 = nn.Variable(300, 10)
+        self.W1 = nn.Variable(784, 200)
+        self.b1 = nn.Variable(200)
+        self.W2 = nn.Variable(200, 200)
+        self.b2 = nn.Variable(200)
+        self.W3 = nn.Variable(200, 10)
+        # self.b3 = nn.Variable(10)
 
     def run(self, x, y=None):
         """
+        TODO: Question 6 - [Application] Digit Classification
+
         Runs the model for a batch of examples.
 
         The correct labels are known during training, but not at test time.
@@ -256,28 +262,33 @@ class DigitClassificationModel(Model):
             (if y is None) A (batch_size x 10) numpy array of scores (aka logits)
         """
         "*** YOUR CODE HERE ***"
+        #three layer f(x) = relu(relu(x*W1 + b1)* W2 + b2) * W3 + b3
+        # variables = 
         self.graph = nn.Graph([self.W1, self.W2, self.W3, self.b1, self.b2])
+        func_x = nn.Input(self.graph, x)
+        #inner_relu = relu(x*W1 + b1)
+        #mult_in = x*W1
+        mult_in = nn.MatrixMultiply(self.graph, func_x, self.W1)
+        mult_in_add = nn.MatrixVectorAdd(self.graph, mult_in, self.b1)
+        inner_relu = nn.ReLU(self.graph, mult_in_add)
+        #second_relu = relu(inner_relu * W2 + b2)
+        innerW2 = nn.MatrixMultiply(self.graph, inner_relu, self.W2)
+        innerW2b2 = nn.MatrixVectorAdd(self.graph, innerW2, self.b2)
+        second_relu = nn.ReLU(self.graph, innerW2b2)
 
-        input_x = nn.Input(self.graph, x)
-        # f(x) = relu(x * M1 + b1) * M2 + b2
-        # f(x) = relu(relu(x * M1 + b1) * M2 + b2) * M3 + b3
+        #last = second_relu * W3 + b3
+        multW3 = nn.MatrixMultiply(self.graph, second_relu, self.W3)
+        # finallyaddb3 = nn.MatrixVectorAdd(self.graph, multW3, self.b3)
 
-        xw = nn.MatrixMultiply(self.graph, input_x, self.W1)
-        xw_plus_b = nn.MatrixVectorAdd(self.graph, xw, self.b1)
-        relu_xw_plus_b = nn.ReLU(self.graph, xw_plus_b)
 
-        m2 = nn.MatrixMultiply(self.graph, relu_xw_plus_b, self.W2)
-        b2_added = nn.MatrixVectorAdd(self.graph, m2, self.b2)
-        relu_layer2 = nn.ReLU(self.graph, b2_added)
-        m3 = nn.MatrixMultiply(self.graph, relu_layer2, self.W3)
 
 
         if y is not None:
             "*** YOUR CODE HERE ***"
-            input_y = nn.Input(self.graph, y)
-            loss = nn.SoftmaxLoss(self.graph, m3, input_y)
-            return self.graph
-
+            given_y = nn.Input(self.graph, y)
+            #print("if statement")
+            loss = nn.SoftmaxLoss(self.graph, multW3, given_y)
+            return self.graph 
         else:
             "*** YOUR CODE HERE ***"
             return self.graph.get_output(self.graph.get_nodes()[-1])
@@ -303,6 +314,13 @@ class DeepQModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
+        self.learning_rate = 0.004
+
+        self.W1 = nn.Variable(4, 200)
+        self.b1 = nn.Variable(200)
+        self.W2 = nn.Variable(200, 200)
+        self.b2 = nn.Variable(200)
+        self.W3 = nn.Variable(200, 2)
 
     def run(self, states, Q_target=None):
         """
@@ -332,12 +350,32 @@ class DeepQModel(Model):
                 scores, for the two actions
         """
         "*** YOUR CODE HERE ***"
+        self.graph = nn.Graph([self.W1, self.W2, self.W3, self.b1, self.b2])
+        func_x = nn.Input(self.graph, states)
+        #inner_relu = relu(x*W1 + b1)
+        #mult_in = x*W1
+        mult_in = nn.MatrixMultiply(self.graph, func_x, self.W1)
+        mult_in_add = nn.MatrixVectorAdd(self.graph, mult_in, self.b1)
+        inner_relu = nn.ReLU(self.graph, mult_in_add)
+        #second_relu = relu(inner_relu * W2 + b2)
+        innerW2 = nn.MatrixMultiply(self.graph, inner_relu, self.W2)
+        innerW2b2 = nn.MatrixVectorAdd(self.graph, innerW2, self.b2)
+        second_relu = nn.ReLU(self.graph, innerW2b2)
+
+        #last = second_relu * W3 + b3
+        multW3 = nn.MatrixMultiply(self.graph, second_relu, self.W3)
+        # finallyaddb3 = nn.MatrixVectorAdd(self.graph, multW3, self.b3)
+
 
         if Q_target is not None:
             "*** YOUR CODE HERE ***"
-
+            given_y = nn.Input(self.graph, Q_target)
+            #print("if statement")
+            loss = nn.SquareLoss(self.graph, multW3, given_y)
+            return self.graph
         else:
             "*** YOUR CODE HERE ***"
+            return self.graph.get_output(self.graph.get_nodes()[-1])
 
     def get_action(self, state, eps):
         """
@@ -381,6 +419,19 @@ class LanguageIDModel(Model):
         # Remember to set self.learning_rate!
         # You may use any learning rate that works well for your architecture
         "*** YOUR CODE HERE ***"
+        self.learning_rate = .006
+
+        self.h0 = nn.Variable(300)
+        self.W1 = nn.Variable(300, self.num_chars)
+        self.W2 = nn.Variable(self.num_chars, 300)
+        self.b2 = nn.Variable(300)
+        self.W3 = nn.Variable(300, 300)
+        self.b3 = nn.Variable(300)
+        self.W4 = nn.Variable(300, 300)
+        self.b4 = nn.Variable(300)
+        self.W5 = nn.Variable(300, 5)
+        self.b5 = nn.Variable(5)
+
 
     def run(self, xs, y=None):
         """
@@ -425,7 +476,31 @@ class LanguageIDModel(Model):
 
         "*** YOUR CODE HERE ***"
 
+        self.graph = nn.Graph([self.W1, self.W2, self.b2, self.W3, self.b3, self.W4, self.b4, self.h0, self.W5, self.b5])
+        hi = np.full((batch_size, 300), 0.0)
+        h0 = nn.Input(self.graph, hi)
+        h_mat = nn.MatrixVectorAdd(self.graph, h0, self.h0)
+        for char in xs:
+            h = nn.MatrixMultiply(self.graph, h_mat, self.W1)
+            c = nn.Input(self.graph, char)
+            handc = nn.MatrixVectorAdd(self.graph, h, c)
+            nextMultW = nn.MatrixMultiply(self.graph, handc, self.W2)
+            add_b2 = nn.MatrixVectorAdd(self.graph, nextMultW, self.b2)
+            first_relu = nn.ReLU(self.graph, add_b2)
+            multRelu = nn.MatrixMultiply(self.graph, first_relu, self.W3)
+            h_mat = nn.MatrixVectorAdd(self.graph, multRelu, self.b3)
+        last_h = nn.MatrixMultiply(self.graph, h_mat, self.W4)
+        add_b4 = nn.MatrixVectorAdd(self.graph, last_h, self.b4)
+        second_relu = nn.ReLU(self.graph, add_b4)
+        mult_relu = nn.MatrixMultiply(self.graph, second_relu, self.W5)
+        add_relu = nn.MatrixVectorAdd(self.graph, mult_relu, self.b5)
+
         if y is not None:
             "*** YOUR CODE HERE ***"
+            given_y = nn.Input(self.graph, y)
+            #print("if statement")
+            loss = nn.SoftmaxLoss(self.graph, add_relu, given_y)
+            return self.graph
         else:
             "*** YOUR CODE HERE ***"
+            return self.graph.get_output(add_relu)
